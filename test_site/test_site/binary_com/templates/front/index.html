@@ -1,0 +1,139 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+<link media="all" rel="stylesheet" href='{% static "css/custom_bootstrap.min.css" %}' />
+
+<script type="text/javascript" src='{% static "js/jquery-3.3.1.min.js" %}'></script>
+
+
+<link media="all" rel="stylesheet" href='{% static "css/jquery-ui.min.css" %}' />
+<script type="text/javascript" src='{% static "js/jquery-ui.min.js" %}'></script>
+
+<script type='text/javascript'>
+
+// ----------------------------
+// Подписаться на транзакции
+// Без авторизации - бесполезно
+// ----------------------------
+function subscribe_transactions(){
+  var action = {"transaction": 1, "subscribe":1}
+}
+// ----------------------------------------
+// Подписаться на тики по нужному контракту
+// ----------------------------------------
+function subscribe_ticks(contract){
+  if(!contract){
+    contract = "R_50"
+  }
+  action = {"ticks": contract, "subscribe":1}
+}
+function get_active_symbols(){
+  var action = {
+    "active_symbols": "brief",
+    "product_type": "basic"
+  }
+  send_data(action);
+}
+// -------------------
+// Ну, млять, поехали!
+// -------------------
+function init(){
+  get_active_symbols();
+}
+
+// -----------------------------
+// Основной класс для компонента
+// -----------------------------
+class GeneralComponent{
+  // --------------------
+  // el => jquery элемент
+  // --------------------
+  constructor(el, clonable){
+    this.components_container = $(".components"); // Контейнер компонентов
+    this.constructor_container = $(".constructor"); // Контейнер конструктора
+    this.el = el;
+    this.clonable = clonable; // Клонируется нажатием true/false
+    // --------------------------
+    // Если это инструмент, то
+    // добавляем в инструментарий
+    // --------------------------
+    if(this.clonable){
+      this.components_container.append(this.el);
+    }
+    // ------------
+    // Нажатие мыши
+    // ------------
+    this.el.on("mousedown", function(e){
+      console.log("mouse down");
+    });
+  }
+  clone_el(){
+    return this.el.clone();
+  }
+}
+
+function init_components(){
+  var rectangle = $('<div class="rectangle"></div>');
+  var rectangle_component = new GeneralComponent(rectangle, true);
+}
+
+
+
+// ----------------------------
+// Браузер загрузил все ресурсы
+// ----------------------------
+window.onload = function(){
+}
+// ---------------------------------------
+// Браузер загрузил HTML и построил дерево
+// ---------------------------------------
+document.addEventListener('DOMContentLoaded', dom_loaded);
+function dom_loaded(){
+  init_components();
+}
+// ----------------
+// Уход со страницы
+// ----------------
+window.onbeforeunload = function() {
+  //return "Данные не сохранены. Точно перейти?";
+};
+</script>
+<style type="text/css">
+  .rectangle{
+    height:70px;
+    width:100px;
+    background-color:#ccc;
+  }
+</style>
+
+</head>
+<body class="custom_bootstrap">
+<table class="table">
+  <thead>
+    <tr>
+      <td>Компоненты</td>
+      <td>Конструктор</td>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td class="components">
+      </td>
+      <td class="constructor"></td>
+    </tr>
+  </tbody>
+
+  <tfoot>
+    <tr>
+      <td></td>
+      <td></td>
+    </tr>
+  </tfoot>
+</table>
+
+</body>
+</html>

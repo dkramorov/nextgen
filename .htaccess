@@ -1,0 +1,11 @@
+Options +ExecCGI
+
+RewriteEngine On
+
+#RewriteRule ^media/(.*)$ /vallomcrm/media/$1 [L]
+
+AddHandler wsgi-script .wsgi
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ /index\.wsgi/$1 [QSA,PT,L]
+

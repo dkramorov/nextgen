@@ -1,0 +1,129 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+{% comment %}
+<!--
+https://svgjs.com/docs/2.7/installation/
+-->
+{% endcomment %}
+<script type="text/javascript" src='{% static "js/svg.min.js" %}'></script>
+{% comment %}
+<!-- Плагины для svg.js
+https://svgjs.com/svg.draw.js/
+-->
+{% endcomment %}
+<script type="text/javascript" src='{% static "js/svg.draw.js" %}'></script>
+<script type="text/javascript" src='{% static "js/lineable.js" %}'></script>
+<script type="text/javascript" src='{% static "js/ellipse.js" %}'></script>
+<script type="text/javascript" src='{% static "js/rectable.js" %}'></script>
+
+<link media="all" rel="stylesheet" href='{% static "css/svg.select.css" %}' />
+
+<script type="text/javascript" src='{% static "js/svg.select.js" %}'></script>
+<style type="text/css">
+  html, body{
+    margin:0;
+    padding:0;
+    height:100%;
+    width:100%;
+  }
+  #drawing{
+    width:100%;
+    height:90%;
+    border:1px solid #ccc;
+  }
+</style>
+<script type='text/javascript'>
+// ----------------------------
+// Браузер загрузил все ресурсы
+// ----------------------------
+window.onload = function(){
+}
+// ---------------------------------------
+// Браузер загрузил HTML и построил дерево
+// ---------------------------------------
+document.addEventListener('DOMContentLoaded', dom_loaded);
+function dom_loaded(){
+  init_drawing();
+}
+// ----------------
+// Уход со страницы
+// ----------------
+window.onbeforeunload = function() {
+  //return "Данные не сохранены. Точно перейти?";
+};
+
+function init_drawing(){
+  var draw = SVG('drawing');
+  var shapes = Array();
+  var index = 0;
+  var shape;
+
+  function getDrawObject(){
+    shape = document.getElementById('shape').value;
+    var color = document.getElementById('color').value;
+    var option = {
+      'stroke': color,
+      'stroke-width': 2,
+      'fill-opacity': 0,
+    };
+    switch (shape) {
+      case 'mouse':
+        return draw.polyline().attr(option);
+      case 'ellipse':
+        return draw.ellipse().attr(option);
+      case 'rect':
+        return draw.rect().attr(option);
+      case 'select':
+        // --------------------------
+        // Возможность выбрать объект
+        // s.selectize();
+        // s.selectize(false, {deepSelect:true});
+        // --------------------------
+        //shapes[index-1].selectize();
+    }
+    return null;
+  }
+  // -------------------------------
+  // Нужен обработчик событий select
+  // -------------------------------
+  draw.on('mousedown', function(e){
+    var s = getDrawObject();
+    shapes[index] = s;
+    s.draw(e);
+  });
+  draw.on('mousemove', function(e){
+    if (shape === 'mouse' && shapes[index]) {
+      shapes[index].draw('point', e);
+    }
+  });
+  draw.on('mouseup', function(e){
+    if (shape === 'mouse') {
+      shapes[index].draw('stop', e);
+    } else {
+      shapes[index].draw(e);
+    }
+    index += 1;
+  });
+
+}
+</script>
+</head>
+<body>
+  <div id="drawing"></div>
+  <select id="shape">
+    <option value="mouse">Mouse</option>
+    <option value="rect">Rect</option>
+    <option value="ellipse">Ellipse</option>
+    <option value="select">Select</option>
+  </select>
+  <select id="color">
+    <option value="#ff0099">Pink</option>
+    <option value="#ffa800">Orange</option>
+    <option value="#cecece">Grey</option>
+  </select>
+</body>
+</html>

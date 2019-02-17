@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+<style type="text/css">
+  html, body{
+    margin:0;
+    padding:0;
+    height:100%;
+    width:100%;
+  }
+  #canvas{
+    background-color:#eee;
+    position:relative;
+  }
+</style>
+<script type='text/javascript'>
+// ------------------
+// Демо-прямоугольник
+// ------------------
+function demo_rectangle(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_rectangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+        ctx.fillRect(25,25,100,100);
+        ctx.clearRect(45,45,60,60);
+        ctx.strokeRect(50,50,50,50);
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// ----------------
+// Демо-треугольник
+// ----------------
+function demo_triangle(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_triangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(75,50);
+        ctx.lineTo(100,75);
+        ctx.lineTo(100,25);
+        ctx.fill();
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// ------------
+// Демо-смайлик
+// ------------
+function demo_smile(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_triangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(75,75,50,0,Math.PI*2, true); // Внешняя окружность
+        ctx.moveTo(110,75);
+        ctx.arc(75,75,35,0,Math.PI, false); // Рот (по часовой стрелке)
+        ctx.moveTo(65,65);
+        ctx.arc(60,65,5,0,Math.PI*2, true); // Левый глаз
+        ctx.moveTo(95,65);
+        ctx.arc(90,65,5,0,Math.PI*2, true); // Правый глаз
+        ctx.stroke();
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// ---------------------
+// Демо-треугольники (2)
+// ---------------------
+function demo_triangles(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_triangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+        // Закрашенный треугольник
+        ctx.beginPath();
+        ctx.moveTo(25,25);
+        ctx.lineTo(105,25);
+        ctx.lineTo(25,105);
+        ctx.fill();
+        // Обычные треугольник
+        ctx.beginPath();
+        ctx.moveTo(125,125);
+        ctx.lineTo(125,45);
+        ctx.lineTo(45,125);
+        ctx.closePath();
+        ctx.stroke();
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// --------------------------
+// Демо-безье диалоговое окно
+// --------------------------
+function demo_bezier_dialog(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_triangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(75,25);
+        ctx.quadraticCurveTo(25,25,25,62.5);
+        ctx.quadraticCurveTo(25,100,50,100);
+        ctx.quadraticCurveTo(50,120,30,125);
+        ctx.quadraticCurveTo(60,120,65,100);
+        ctx.quadraticCurveTo(125,100,125,62.5);
+        ctx.quadraticCurveTo(125,25,75,25);
+        ctx.stroke();
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// --------------------------
+// Демо-безье диалоговое окно
+// --------------------------
+function demo_bezier_hearth(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_triangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(75,40);
+        ctx.bezierCurveTo(75,37,70,25,50,25);
+        ctx.bezierCurveTo(20,25,20,62.5,20,62.5);
+        ctx.bezierCurveTo(20,80,40,102,75,120);
+        ctx.bezierCurveTo(110,102,130,80,130,62.5);
+        ctx.bezierCurveTo(130,62.5,130,25,100,25);
+        ctx.bezierCurveTo(85,25,75,37,75,40);
+        ctx.fill();
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// ----------------
+// Демо-Path2D
+// new Path2D();     // пустой path объект
+// new Path2D(path); // копирование из другого path
+// new Path2D(d);    // path из SVG
+// ----------------
+function demo_Path2D(canvas_container){
+    var canvas = document.getElementById(canvas_container);
+    console.log('demo_triangle on', canvas_container);
+    if(canvas.getContext){
+        var ctx = canvas.getContext('2d');
+
+        var rectangle = new Path2D();
+        rectangle.rect(10,10,50,50);
+
+        var circle = new Path2D();
+        circle.moveTo(125,35);
+        circle.arc(100,35,25,0, 2*Math.PI);
+
+        ctx.stroke(rectangle);
+        ctx.fill(circle);
+    }else{
+        console.log('canvas.getContext("2d") is not supported');
+    }
+}
+// ----------------------------
+// Браузер загрузил все ресурсы
+// ----------------------------
+window.onload = function(){
+}
+// ---------------------------------------
+// Браузер загрузил HTML и построил дерево
+// ---------------------------------------
+document.addEventListener('DOMContentLoaded', dom_loaded);
+function dom_loaded(){
+    demo_rectangle('demo_rectangle');
+    demo_triangle('demo_triangle');
+    demo_smile('demo_smile');
+    demo_triangles('demo_triangles');
+    demo_bezier_dialog('demo_bezier_dialog');
+    demo_bezier_hearth('demo_bezier_hearth');
+    demo_Path2D('demo_Path2D');
+}
+// ----------------
+// Уход со страницы
+// ----------------
+window.onbeforeunload = function() {
+    //return "Данные не сохранены. Точно перейти?";
+};
+</script>
+</head>
+<body>
+    <canvas id="demo_rectangle"></canvas>
+    <canvas id="demo_triangle"></canvas>
+    <canvas id="demo_smile"></canvas>
+    <canvas id="demo_triangles"></canvas>
+    <canvas id="demo_bezier_dialog"></canvas>
+    <canvas id="demo_bezier_hearth"></canvas>
+    <canvas id="demo_Path2D"></canvas>
+</body>
+</html>
