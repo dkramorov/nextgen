@@ -61,26 +61,69 @@ class GeneralComponent{
     // добавляем в инструментарий
     // --------------------------
     if(this.clonable){
+      this.el.draggable({
+        helper: "clone",
+      });
       this.components_container.append(this.el);
+    }else{
+      this.el.draggable({
+        snap: true,
+        grid: [10, 10],
+        containment: this.constructor_container
+      });
     }
-    // ------------
-    // Нажатие мыши
-    // ------------
-    this.el.on("mousedown", function(e){
-      console.log("mouse down");
-    });
-  }
-  clone_el(){
-    return this.el.clone();
   }
 }
 
 function init_components(){
-  var rectangle = $('<div class="rectangle"></div>');
+  // -----------------------------------
+  // Инициализация объектов, которые
+  // могут быть перемещены в конструктор
+  // -----------------------------------
+  var rectangle = $('<div><div class="rectangle"></div></div>');
   var rectangle_component = new GeneralComponent(rectangle, true);
+
+  var arrow_up = $('<div><div class="arrow_up"></div></div>');
+  var arrow_up_component = new GeneralComponent(arrow_up, true);
+
+  // ---------------------------
+  // Инициализация области, куда
+  // будут перемещаться объекты
+  // ---------------------------
+  $(".constructor").droppable({
+    drop: function(event, ui){
+      var html = ui.draggable.html();
+      var new_el = new GeneralComponent($(html), false);
+      $(this).append(new_el.el);
+    }
+  });
 }
 
+// --------------------------------------
+// Задаем настройки для конструктора схем
+// --------------------------------------
+function apply_constructor_settings(){
 
+  var cs_width = $("#constructor_width");
+  var cs_height = $("#constructor_height");
+
+  var width = parseInt(cs_width.val());
+  var height = parseInt(cs_height.val());
+
+  $(".constructor").width(width);
+  $(".constructor").height(height);
+
+  $(".constructor").resizable({
+    grid: [10, 10],
+  });
+
+  $(".constructor").on("resizestop", function(event, ui){
+    cs_width.val(ui.size.width);
+    cs_height.val(ui.size.height);
+  });
+
+  console.log("set width", width, "and height", height);
+}
 
 // ----------------------------
 // Браузер загрузил все ресурсы
@@ -93,6 +136,14 @@ window.onload = function(){
 document.addEventListener('DOMContentLoaded', dom_loaded);
 function dom_loaded(){
   init_components();
+
+  // --------------------------
+  // Задаем настройки для схемы
+  // --------------------------
+  apply_constructor_settings();
+  $("#apply_constructor_settings").click(function(){
+    apply_constructor_settings();
+  });
 }
 // ----------------
 // Уход со страницы
@@ -102,38 +153,75 @@ window.onbeforeunload = function() {
 };
 </script>
 <style type="text/css">
+  .clear{
+    clear:both;
+    width:100%;
+  }
+  table.table thead th{
+    text-align:center;
+    border:0 !important;
+  }
+  table.table tfoot th{
+    text-align:center;
+    border:0 !important;
+  }
+  .components{
+    width:150px;
+    border:0 !important;
+  }
+  .constructor{
+    border:1px solid #ccc;
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGUlEQVQYV2NkIBIwEqmOYVQh3pAiNnj+AwALaAEKfsPrZgAAAABJRU5ErkJggg==);
+  }
   .rectangle{
-    height:70px;
+    height:100px;
     width:100px;
     background-color:#ccc;
+    display:inline-block;
+  }
+  /* Абсолютные координаты (для добавления) */
+  .constructor .rectangle,
+  .constructor .arrow_up{
+    position:absolute !important;
+  }
+  .arrow_up {
+    width: 0;
+    height: 0;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 50px solid #ccc; /* тут цвет */
   }
 </style>
 
 </head>
 <body class="custom_bootstrap">
-<table class="table">
-  <thead>
-    <tr>
-      <td>Компоненты</td>
-      <td>Конструктор</td>
-    </tr>
-  </thead>
 
-  <tbody>
-    <tr>
-      <td class="components">
-      </td>
-      <td class="constructor"></td>
-    </tr>
-  </tbody>
+<!-- Настройки для схемы -->
+<div class="settings">
+  <div class="col-md-4">
+    <label for="constructor_width">Ширина схемы</label><br />
+    <input type="number" id="constructor_width"  step="10" min="100" max="3000" value="800" autocomplete="off" />
+  </div>
+  <div class="col-md-4">
+    <label for="constructor_width">Высота схемы</label><br />
+    <input type="number" id="constructor_height" step="10" min="100" max="3000" value="600" autocomplete="off" />
+  </div>
+  <div class="col-md-4"><br />
+    <input type="button" class="btn btn-primary" id="apply_constructor_settings" value="Задать" />
+  </div>
+  <div class="clear"></div>
+</div>
 
-  <tfoot>
-    <tr>
-      <td></td>
-      <td></td>
-    </tr>
-  </tfoot>
-</table>
+<br /><br />
+
+<div class="col-md-3">
+  <div>Компоненты</div>
+  <div class="components"></div>
+</div>
+<div class="col-md-9">
+  <div>Конструктор схем</div>
+  <div class="constructor"></div>
+</div>
 
 </body>
 </html>
