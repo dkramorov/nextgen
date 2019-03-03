@@ -2,5 +2,5 @@
 from django.apps import AppConfig
 
 
-class BinaryComConfig(AppConfig):
-    name = 'binary_com'
+class ExcelkaConfig(AppConfig):
+    name = 'excelka'

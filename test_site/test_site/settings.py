@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Django settings for test_site project.
 
@@ -11,10 +12,26 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import django
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/1.11/howto/static-files/
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+#    os.path.join(BASE_DIR, 'assets'),
+)
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -22,16 +39,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '_o@3b0cu-v$s1(w_y-heh05cd5bmr3%e=@jj&4h0flt4&#=1fi'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [
+    #'223-223.ru',
+    #'.223-223.ru', # wildcard
+    '*', # all
+]
 
 # Application definition
 MY_APPS = [
     'test_site.block_scheme',
     'test_site.binary_com',
+    'test_site.excelka',
 ]
 
 
@@ -118,8 +137,5 @@ USE_L10N = True
 
 USE_TZ = True
 
+django.setup()
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.11/howto/static-files/
-
-STATIC_URL = '/static/'

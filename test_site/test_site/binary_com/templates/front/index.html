@@ -71,6 +71,9 @@ class GeneralComponent{
         grid: [10, 10],
         containment: this.constructor_container
       });
+      this.el.resizable({
+        grid: [10, 10],
+      });
     }
   }
 }
@@ -95,6 +98,8 @@ function init_components(){
       var html = ui.draggable.html();
       var new_el = new GeneralComponent($(html), false);
       $(this).append(new_el.el);
+      //new_el.el.css("top", event.pageY - ui.offset.top);
+      //new_el.el.css("left", event.pageX - ui.offset.left);
     }
   });
 }
@@ -177,7 +182,6 @@ window.onbeforeunload = function() {
     height:100px;
     width:100px;
     background-color:#ccc;
-    display:inline-block;
   }
   /* Абсолютные координаты (для добавления) */
   .constructor .rectangle,
@@ -185,11 +189,11 @@ window.onbeforeunload = function() {
     position:absolute !important;
   }
   .arrow_up {
-    width: 0;
-    height: 0;
-    border-left: 50px solid transparent;
-    border-right: 50px solid transparent;
-    border-bottom: 50px solid #ccc; /* тут цвет */
+    height:100px;
+    width:100px;
+    background-image:url("{% static 'img/arrow_right.png' %}");
+    background-size:cover;
+    background-repeat:no-repeat;
   }
 </style>
 
