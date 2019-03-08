@@ -153,6 +153,14 @@ function previewFile(r, i) {
   document.getElementById('upload_result').appendChild(info);
   var html = "";
   html += '<p><a href="' + r['dest'] + '">' + r['name'] +  '</a></p>';
+
+  // -----------------
+  // Пишем длины строк
+  // -----------------
+  html += '<p><strong>Максимальные длины:</strong></p>';
+  for(var row in r['file']['rows_length']){
+    html += '<p>' + row + ':' + r['file']['rows_length'][row] + '</p>';
+  }
   html += '<table class="table">';
   html += '<thead>';
   html += '<tr>';

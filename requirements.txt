@@ -2,3 +2,5 @@
 django==1.11.20
 XlsxWriter==1.1.5
 openpyxl==2.6.0
+# install celery + redis as broker
+celery[redis]==4.2.1

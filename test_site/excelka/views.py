@@ -87,6 +87,7 @@ def read_workbook(excel_file):
     # -----------------------------------
     result['names'] = names
     result['rows'] = []
+    result['rows_length'] = {name:0 for name in names}
     # -------------------------
     # Проходим по каждой строке
     # Кроме первой
@@ -104,6 +105,9 @@ def read_workbook(excel_file):
           # ------------------------------
           ind = names.index(name)
           value = row[ind].value or ""
+          len_value = len("{}".format(value))
+          if result['rows_length'][name] < len_value:
+              result['rows_length'][name] = len_value
           line.append(value)
 
         # ---------------------------

@@ -48,9 +48,9 @@ ALLOWED_HOSTS = [
 
 # Application definition
 MY_APPS = [
-    'test_site.block_scheme',
-    'test_site.binary_com',
-    'test_site.excelka',
+    'block_scheme',
+    'binary_com',
+    'excelka',
 ]
 
 
@@ -136,6 +136,16 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+# ------
+# CELERY
+# ------
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_QUEUE_COUNTDOWN = 600
+CELERY_QUEUE_MAX_RETRIES = 3
+CELERY_TIMEZONE = 'UTC'
+CELERY_ALWAYS_EAGER = False
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'
 
 django.setup()
 
