@@ -56,14 +56,14 @@ function dom_loaded(){
   var memory = localStorage.getItem("__memory");
   if(memory && memory.length > 10){
     __memory = JSON.parse(memory);
-    //steps_from_memory();
+    steps_from_memory();
   }else{
-    //step_to_memory();
+    step_to_memory();
   }
 
 
   //initPageObjects();
-  //resizeCanvas();
+  resizeCanvas();
   //initRedactor();
 
   // -----------------------
@@ -342,12 +342,9 @@ $(document).ready(function(){
   });
 
   setInterval(function(){
-    //update_steps_in_memory();
-    //localStorage.setItem("__memory", JSON.stringify(__memory));
+    update_steps_in_memory();
+    localStorage.setItem("__memory", JSON.stringify(__memory));
   }, 1000);
-
-
-  initPageObjects();
 });
 </script>
 </head>
@@ -383,9 +380,9 @@ $(document).ready(function(){
 
 <div class="canvas" id="mainCanvas" style="width: 100%; height: 600px; border: 1px solid black;">
 
-
-    {% include "dialog/demo_dialog.html" %}
-
+  {% comment %}
+    <!--{% include "dialog/demo_dialog.html" %}-->
+  {% endcomment %}
 
 </div>
 
