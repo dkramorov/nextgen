@@ -1,0 +1,23 @@
+{% load static %}
+<div class="block draggable" id="block_1" style="left:48px; top:2px;">
+  <div class="title balloon_title">Шаг 1. Приветствие</div>
+  <div class="desc balloon_desc">Здравствуйте, ...</div>
+</div>
+
+<div class="block draggable" id="block_2" style="left:147px; top:126px;">
+  <div class="title balloon_title">Шаг ххх. Прощание</div>
+  <div class="desc balloon_desc">До свидания, ...</div>
+</div>
+
+<div class="connector block_1 block_2">
+
+  <!--<img src='{% static "img/arrow.gif" %}' class="connector-start">-->
+  <img src='{% static "img/arrow.gif" %}' class="connector-end" data-to="block_2" data-from="block_1">
+
+  <!--
+  <label class="source-label">start</label>
+  <label class="middle-label">middle</label>
+  <label class="destination-label">end</label>
+  -->
+
+</div>

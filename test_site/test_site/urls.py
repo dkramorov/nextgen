@@ -8,6 +8,7 @@ urlpatterns = [
     url(r'^block_scheme/', include('block_scheme.urls')),
     url(r'^binary_com/', include('binary_com.urls')),
     url(r'^excelka/', include('excelka.urls', namespace='excelka')),
+    url(r'^dialog/', include('dialog.urls', namespace='dialog')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

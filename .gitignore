@@ -2,3 +2,7 @@
 env
 *dump.rdb
 media
+*__pycache__
+*.pyc
+
+

@@ -51,6 +51,7 @@ MY_APPS = [
     'block_scheme',
     'binary_com',
     'excelka',
+    'dialog',
 ]
 
 
@@ -123,6 +124,45 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(module)s '
+                      '%(message)s'
+        },
+    },
+    'handlers': {
+        #'sentry': {
+        #    'level': 'ERROR',
+        #    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        #},
+        'console': {
+            'level': "DEBUG",
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        }
+    },
+    'loggers': {
+        #'raven': {
+        #    'level': 'DEBUG',
+        #    'handlers': ['console'],
+        #    'propagate': False,
+        #},
+        #'sentry.errors': {
+        #    'level': 'DEBUG',
+        #    'handlers': ['console'],
+        #    'propagate': False,
+        #},
+        'test_site': {
+            'level': 'DEBUG',
+            #'handlers': ['console', 'sentry'],
+            'handlers': ['console', ],
+            'propagate': False,
+        },
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import logging
 from io import BytesIO
 import xlsxwriter
 from openpyxl import load_workbook
@@ -7,6 +8,8 @@ from openpyxl import load_workbook
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import render
+
+logger = logging.getLogger(__name__)
 
 def index(request):
     context = {

@@ -1,0 +1,51 @@
+.draggable{
+	position: absolute;
+	cursor: move;
+	z-index: 1;
+}
+.redactor_editor{
+  cursor: text;
+}
+
+.dock_point{
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+	padding: 0px !important;
+	border: none !important;
+	margin: 0px !important;
+	position: absolute;
+	font-size: 1px;
+	visibility: hidden;
+}
+
+div.block, h1.block, h2.block, p.block{
+	border: 1px solid #9DA3B3;
+	background-color: #E0E8FF;
+	padding: 5px;
+}
+
+.highlighter{
+	border: 1px solid #CFDF62 !important;
+	background-color: #F1FF90 !important;
+	margin-bottom: 2px !important;
+	padding: 0px !important;
+	z-index: 3;
+}
+
+.highlighter .highlighter{
+	border: 1px solid #7DAB76 !important;
+	background-color: #BAFFB0 !important;
+	margin-left: 2px !important;
+	margin-right: 2px !important;
+}
+
+div.connector{
+	background-color: #FF9900;
+	z-index: 1000;
+}
+
+.code{
+	font-family: monospace;
+	line-height: 1.5em !important;
+}
