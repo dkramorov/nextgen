@@ -6,5 +6,5 @@ def index(request):
     context = {
       'name':'binary_com',
     }
-    return render(request, 'front/index.html', context)
+    return render(request, 'binary_com/index.html', context)
     #return HttpResponse("Hi")

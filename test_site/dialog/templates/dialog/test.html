@@ -42,7 +42,7 @@ var __root_id = "#mainCanvas";
 // Память для хранения
 // всех блоков и связей
 // --------------------
-var __memory = Array();
+var __memory = {"steps":Array(), "connectors":Array()};
 
 // ---------------------------------------
 // Браузер загрузил HTML и построил дерево
@@ -50,40 +50,31 @@ var __memory = Array();
 document.addEventListener('DOMContentLoaded', dom_loaded);
 
 function dom_loaded(){
-
-  //step_to_memory();
-
   var memory = localStorage.getItem("__memory");
-  if(memory && memory.length > 10){
+  if(memory !== null){
     __memory = JSON.parse(memory);
-    steps_from_memory();
+    load_memory();
   }else{
+    initPageObjects();
     step_to_memory();
   }
-
-
-  //initPageObjects();
   resizeCanvas();
-  //initRedactor();
-
-  // -----------------------
-  // Найти наш рабочий холст
-  // -----------------------
-  //console.log(findCanvas(__root_id.replace("#", "")));
 }
 
 // -----------------------------------
 // Инициализирем редактор для textarea
 // -----------------------------------
-function initRedactor(){
-  var balloon_title = $(__root_id + " .balloon_title");
+function initRedactor(block){
+  var block_id = "";
+  if(block !== undefined){
+    block_id = " #" + block;
+  }
+  var balloon_title = $(__root_id + block_id + " .balloon_title");
   balloon_title.redactor({
-    //fixed: true,
     air: true,
   });
-  var balloon_desc = $(__root_id + " .balloon_desc");
+  var balloon_desc = $(__root_id + block_id + " .balloon_desc");
   balloon_desc.redactor({
-    //fixed: true,
     air: true,
   });
 }
@@ -149,31 +140,6 @@ function hide_air_mode_redactor(){
 function load_balloon(el){
   $("#balloon_title").html(el.find(".balloon_title").getCode());
   $("#balloon_desc").html(el.find(".balloon_desc").getCode());
-  get_balloon_answers_count(el);
-}
-
-// --------------------------
-// Снять все выделения текста
-// НЕ ИСПОЛЬЗУЕТСЯ
-// --------------------------
-function clearSelection(){
- if (window.getSelection) {window.getSelection().removeAllRanges();}
- else if (document.selection) {document.selection.empty();}
-}
-
-// ---------------------------------
-// Получить количество потомков шага
-// ---------------------------------
-function get_balloon_answers_count(el){
-  var answers_count = 0;
-  var cls = el.attr("id");
-
-  $(__root_id + " .connector-end").each(function(){
-    if($(this).attr("data-from") === cls){
-      answers_count += 1;
-    }
-  });
-  $("#balloon_answers_count").html("Вложенные шаги: " + answers_count);
 }
 
 // ------------------
@@ -196,64 +162,134 @@ function get_last_step(){
 // Добавление нового шага в память
 // -------------------------------
 function step_to_memory(){
-
+  var canvas = findCanvas(__root_id.replace("#", ""));
+  // -----------------------
+  // Добавление нового блока
+  // -----------------------
   var last_step_id = get_last_step();
   var new_step_id = last_step_id + 1;
 
   var title = `Шаг ${new_step_id}. Название`;
   var desc = `Текст ...`;
-  // ----------------------------------
-  // Коннектор к родительскому элементу
-  // ----------------------------------
-  var connectors = Array();
-  if(selected_element === null){
-    parent_id = null;
-  }else{
-    connectors.push({
-      parent_id: parseInt(selected_element.attr("id").replace("block_", "")),
-    });
-  }
 
-  __memory.push({
+  var step = {
     "id": new_step_id,
     "title": title,
     "desc": desc,
     "left": 1,
     "top": 1,
-    "connectors": connectors,
-  });
-  steps_from_memory();
-}
+  }
+  __memory['steps'].push(step);
 
-// -----------------------------
-// Восстановление шага из памяти
-// -----------------------------
-function step_from_memory(step){
   var new_step = `
-    <div class="block draggable" id="block_${step.id}" style="left:${step.left}px; top:${step.top}px;">
+    <div class="block draggable" id="block_${step.id}" style="left:${step.left}px; top:${step.top}px; position:absolute;">
       <div class="title balloon_title">${step.title}</div>
       <div class="desc balloon_desc">${step.desc}</div>
     </div>
   `;
-  $(__root_id).append($(new_step));
 
-  for(var i=0; i<step.connectors.length; i++){
-    var connector = step.connectors[i];
+  $(__root_id).append(new_step);
+  var newBlock = new Block(document.getElementById("block_" + step.id), canvas);
+  newBlock.initBlock();
+  canvas.blocks.push(newBlock);
+  initRedactor(`block_${step.id}`);
+  initBlockListeners(`block_${step.id}`);
+  // ----------------------------------
+  // Коннектор к родительскому элементу
+  // ----------------------------------
+  if(selected_element !== null){
+    selected_element_id = parseInt(selected_element.attr("id").replace("block_", ""));
+
+    var connector = {
+      "id": `connector block_${selected_element_id} block_${new_step_id}`,
+    }
+    __memory['connectors'].push(connector);
+    // ----------------------------
+    // Добавление нового коннектора
+    // ----------------------------
     var new_connector = `
-      <div class="connector block_${connector.parent_id} block_${step.id}">
-        <img src='{% static "img/arrow.gif" %}' class="connector-end" data-to="block_${step.id}" data-from="block_${connector.parent_id}">
+      <div class="${connector.id}" id="${connector.id}">
+        <img src='{% static "img/arrow.gif" %}' class="connector-end">
+      </div>
+    `;
+    $(__root_id).append(new_connector);
+    var newConnector = new Connector(document.getElementById(connector.id), canvas);
+    newConnector.initConnector();
+    canvas.connectors.push(newConnector);
+  }
+}
+
+// -----------------------
+// Удаление шага из памяти
+// -----------------------
+function step_from_memory(){
+  if(selected_element === null){
+    return;
+  }
+  var selected_element_id = parseInt(selected_element.attr("id").replace("block_", ""));
+
+  var new_steps = Array();
+  for(var i=0; i<__memory['steps'].length; i++){
+    var step = __memory['steps'][i];
+    if(step.id !== selected_element_id){
+      new_steps.push(step);
+    }
+  }
+
+  var new_connectors = Array();
+  for(var i=0; i<__memory['connectors'].length; i++){
+    var connector = __memory['connectors'][i];
+    if(connector.id.indexOf(" block_" + selected_element_id) == -1){
+      new_connectors.push(connector);
+    }
+  }
+  selected_element = null;
+  __memory['steps'] = new_steps;
+  __memory['connectors'] = new_connectors;
+  load_memory();
+}
+// -----------------------------------
+// Восстанавливаем все шаги из памяти,
+// инициируем редактор
+// -----------------------------------
+function load_memory(){
+  dropPageObjects(__root_id);
+
+  for(var i=0; i<__memory['steps'].length; i++){
+    var step = __memory['steps'][i];
+    var new_step = `
+      <div class="block draggable" id="block_${step.id}" style="left:${step.left}px; top:${step.top}px; position:absolute;">
+        <div class="title balloon_title">${step.title}</div>
+        <div class="desc balloon_desc">${step.desc}</div>
+      </div>
+    `;
+    $(__root_id).append($(new_step));
+  }
+  for(var i=0; i<__memory['connectors'].length; i++){
+    var connector = __memory['connectors'][i];
+    var new_connector = `
+      <div class="${connector.id}">
+        <img src='{% static "img/arrow.gif" %}' class="connector-end">
       </div>
     `;
     $(__root_id).append($(new_connector));
   }
+
+  initRedactor();
+  initBlockListeners();
+  initPageObjects();
 }
 
 // --------------------------------
 // Нажатие по блоку, вызываем меню,
 // загружаем информацию в меню
 // --------------------------------
-function initBlockListeners(){
-  $(__root_id + " .block").click(function(event){
+function initBlockListeners(block){
+  var block_selector = " .block";
+  if(block !== undefined){
+    block_selector = " #" + block;
+  }
+  $(__root_id + block_selector).click(function(event){
     selected_element = $(this);
     open_mainMenu(event);
     load_balloon($(this));
@@ -275,21 +311,6 @@ function dropPageObjects(){
   }
 }
 
-// -----------------------------------
-// Восстанавливаем все шаги из памяти,
-// инициируем редактор
-// -----------------------------------
-function steps_from_memory(){
-  dropPageObjects(__root_id);
-
-  for(var i=0; i<__memory.length; i++){
-    step_from_memory(__memory[i]);
-  }
-  initRedactor();
-  initBlockListeners();
-  initPageObjects();
-}
-
 // ----------------------------------
 // Обновление позиции, заголовка,
 // описания в памяти для последующего
@@ -298,13 +319,25 @@ function steps_from_memory(){
 function update_steps_in_memory(){
   var canvas = findCanvas(__root_id.replace("#", ""));
   if(canvas !== null){
+    __memory['steps'] = Array();
+    __memory['connectors'] = Array();
     var blocks = canvas.blocks;
     for(var i=0; i<blocks.length; i++){
-      __memory[i].left = blocks[i].currentLeft;
-      __memory[i].top = blocks[i].currentTop;
-
-      //console.log($("#" + blocks[i].id).find(".balloon_title").getCode());
-      //console.log($("#" + blocks[i].id).find(".balloon_desc").getCode());
+      var block = blocks[i];
+      __memory['steps'].push({
+        "id": parseInt(block.id.replace("block_", "")),
+        "title": $("#" + block.id).find(".balloon_title").getCode(),
+        "desc": $("#" + block.id).find(".balloon_desc").getCode(),
+        "left": block.currentLeft,
+        "top": block.currentTop,
+      });
+    }
+    var connectors = canvas.connectors;
+    for(var i=0; i<connectors.length; i++){
+      var connector = connectors[i];
+      __memory['connectors'].push({
+        "id": connector.id,
+      });
     }
   }
 }
@@ -341,6 +374,13 @@ $(document).ready(function(){
     step_to_memory();
   });
 
+  $("#drop_current_step").click(function(event){
+    if(selected_element === null){
+      return;
+    }
+    step_from_memory();
+  });
+
   setInterval(function(){
     update_steps_in_memory();
     localStorage.setItem("__memory", JSON.stringify(__memory));
@@ -360,9 +400,9 @@ $(document).ready(function(){
           <div id="balloon_desc">
             Содержание шага
           </div>
-          <div id="balloon_answers_count"></div>
           <div class="input-group">
             <a href="javascript:void(0);" id="add_new_step" class="btn btn-primary">Добавить шаг</a>
+            <a href="javascript:void(0);" id="drop_current_step" class="btn btn-danger">Удалить шаг</a>
           </div>
         </div>
       </div>

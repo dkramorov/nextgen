@@ -850,7 +850,7 @@ function ConnectorEnd(htmlElement, connector, side){
 	this.side = side;
 	this.htmlElement = htmlElement;
 	this.connector = connector;
-	connector.canvas.htmlElement.appendChild(htmlElement);
+	this.connector.canvas.htmlElement.appendChild(htmlElement);
 	// strip extension
 	if(this.htmlElement.tagName.toLowerCase() == "img"){
 		this.src = this.htmlElement.src.substring(0, this.htmlElement.src.lastIndexOf('.'));
@@ -867,7 +867,7 @@ function ConnectorEnd(htmlElement, connector, side){
 		var segment;
 		var orientation;
 		if(this.side == START){
-			segment = connector.getStartSegment();
+			segment = this.connector.getStartSegment();
 			left = segment.startX;
 			top = segment.startY;
 			orientation = segment.orientation;
@@ -877,7 +877,7 @@ function ConnectorEnd(htmlElement, connector, side){
 			else
 				orientation = (~orientation) & HORIZONTAL;
 		}else{
-			segment = connector.getEndSegment();
+			segment = this.connector.getEndSegment();
 			left = segment.getEndX();
 			top = segment.getEndY();
 			orientation = segment.orientation;
@@ -978,7 +978,7 @@ function MiddleConnectorLabel(connector, htmlElement){
 
 		var left;
 		var top;
-		var segment = connector.getMiddleSegment();
+		var segment = this.connector.getMiddleSegment();
 
 		if((segment.orientation & VERTICAL) != 0){
 			// put label at middle height on right side of the connector
@@ -1225,9 +1225,9 @@ function HorizontalSStrategy(connector){
 	}
 
 	this.paint = function(){
-		this.startSegment = connector.createSegment();
-		this.middleSegment = connector.createSegment();
-		this.endSegment = connector.createSegment();
+		this.startSegment = this.connector.createSegment();
+		this.middleSegment = this.connector.createSegment();
+		this.endSegment = this.connector.createSegment();
 
 		var sourceLeft = this.connector.source.left();
 		var sourceTop = this.connector.source.top();
@@ -1297,9 +1297,9 @@ function VerticalSStrategy(connector){
 	}
 
 	this.paint = function(){
-		this.startSegment = connector.createSegment();
-		this.middleSegment = connector.createSegment();
-		this.endSegment = connector.createSegment();
+		this.startSegment = this.connector.createSegment();
+		this.middleSegment = this.connector.createSegment();
+		this.endSegment = this.connector.createSegment();
 
 		var sourceLeft = this.connector.source.left();
 		var sourceTop = this.connector.source.top();
@@ -1547,9 +1547,9 @@ function VerticalCStrategy(connector, startOrientation){
 	}
 
 	this.paint = function(){
-		this.startSegment = connector.createSegment();
-		this.middleSegment = connector.createSegment();
-		this.endSegment = connector.createSegment();
+		this.startSegment = this.connector.createSegment();
+		this.middleSegment = this.connector.createSegment();
+		this.endSegment = this.connector.createSegment();
 		var sign = 1;
 		if(startOrientation == DOWN)
 			sign = -1;

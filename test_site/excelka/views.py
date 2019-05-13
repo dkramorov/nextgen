@@ -53,7 +53,7 @@ def upload_xlsx(request):
 
 #################################################
 # openpyxl - xlsx
-# xlswriter - xlsx
+# xlswriter - xlsx, pip install XlsxWriter
 # xlrd - xls
 # xlwt - xls
 #################################################
@@ -161,12 +161,12 @@ def create_workbook(names, rows, sheet_name=None):
         # следующим листом?
         # ------------------
         if row_number > 65500:
-            msg = "К сожалению, файл был обрезан из-за большого количества позиций"
-            sheet.merge_range("A{}:H{}".format(row_number, row_number), msg)
+            msg = 'К сожалению, файл был обрезан из-за большого количества позиций'
+            sheet.merge_range('A{}:H{}'.format(row_number, row_number), msg)
             break
 
         for cell in enumerate(row):
-            value = cell[1] or ""
+            value = cell[1] or ''
             sheet.write(row_number, cell[0], value)
 
     book.close()
