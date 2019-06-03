@@ -1,8 +1,6 @@
 *.DS_Store
 env
 *dump.rdb
-media
-*__pycache__
+__pycache__/
 *.pyc
-
-
+media

@@ -16,7 +16,11 @@
 function log(func, msg){
   console.log(func, "=>", msg);
 }
-var ws_token = "S2CdZcfFPZ6Q0A2"
+var ws_tokens = ["S2CdZcfFPZ6Q0A2",   // dkramorov@mail.ru
+                 "vwG5V6Vo66jUpqq",   // dk@223-223.ru
+                ];
+
+
 var authorized = false;
 var ws = null;
 var active_symbols = null;
@@ -25,6 +29,8 @@ var ticks_data = {}; // тики по контрактам
 var deals_data = {}; // сделки по контрактам
 var conditions_data = {}; // выполненные условия по контрактам
 var delay_before_deal = {}; // замок - задержка перед следующей ставкой по контрактам
+var charts_data = {}; // графики по контрактам
+var stats_data = {}; // статистика по контрактам
 
 // ---------
 // Константы
@@ -32,28 +38,6 @@ var delay_before_deal = {}; // замок - задержка перед след
 var MAX_TICKS = 1000;
 var BOLLINGER_BANDS_STEPS = 20;
 var STANDARD_DEVIATIONS = 2;
-
-// -----------------------------
-// Преобразуем время в локальное
-// -----------------------------
-function local_timestamp(epoch){
-  var date = new Date();
-  date.setTime(epoch*1000);
-  var new_date = new Date(date.getTime() + date.getTimezoneOffset()*60*1000);
-  var offset = date.getTimezoneOffset() / 60;
-  var hours = date.getHours();
-  new_date.setHours(hours-offset);
-  return new_date.getTime();
-}
-
-// ----------------
-// Timestamp в дату
-// ----------------
-function timestamp2date(epoch){
-  var date = new Date();
-  date.setTime(epoch);
-  return date;
-}
 
 // -------------
 // Инициализация
@@ -95,6 +79,12 @@ function init_websocket(){
       // ------------------------------------------
       case 'proposal_open_contract':
         save_new_deal(data.proposal_open_contract);
+        break;
+      // -----------------
+      // Покупка контракта
+      // -----------------
+      case 'buy':
+        update_account(data.buy);
         break;
       default:
         break;
@@ -175,16 +165,32 @@ function save_new_tick(tick){
   }
 }
 
+// ----------------------------------------
+// Делаем ставку, т/к условия удовлетворены
+// symbol - контракт, type = PUT|POST
+// ----------------------------------------
+function buy_from_playboy(symbol, type){
+  // -----------------------
+  // Делаем ставку,
+  // что там по мартингейлу?
+  // -----------------------
+  var deal_params = {
+    "contract_type": type,
+    "amount": calc_rates(symbol),
+  }
+  buy(symbol, deal_params);
+  var date = new Date();
+  var now = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + date.getMonth() + "/" + date.getFullYear();
+  $("#analytics").append($("<p>" + " " + now + " " + symbol + " " + type + " ставка " + deal_params['amount'] + "</p>"));
+}
+
 // ----------------------------------
-// Покупка вниз =>
+// Покупка =>
 // Цена пересекает среднюю линию
 // канала Боллинджера или касается ее
-// После этого касается верхней
+// После этого касается крайней
 // линии канала Боллинджера
-// Покупка осуществляется на
-// момент пересечения (касания) ценой
-// верхней линии канала Боллинджера
-// Длительность сделки 2 минуты
+// Покупка делается противоположно
 // ----------------------------------
 function playboy(symbol){
   // -----------------------------------
@@ -192,20 +198,19 @@ function playboy(symbol){
   // от нее считать будем
   // -----------------------------------
   var epoch = 0;
+  var last_deal = null;
+
   var last_deal_len = deals_data[symbol].length;
   if(last_deal_len !== 0){
     // --------------------------------
     // Если последняя сделка еще
     // не завершена, тогда пока ожидаем
     // --------------------------------
-    var last_deal = deals_data[symbol][last_deal_len - 1];
+    last_deal = deals_data[symbol][last_deal_len - 1];
     if(last_deal.status === "open"){
       return;
     }
-    //if(last_deal.status !== "won" && last_deal.status !== "lost"){
-      //return;
-    //}
-    epoch = local_timestamp(deals_data[symbol][last_deal_len - 1].date_start);
+    epoch = local_timestamp(deals_data[symbol][last_deal_len - 1].date_expiry);
   }
   // ---------------------------------
   // Проверяем последний тик,
@@ -216,60 +221,111 @@ function playboy(symbol){
     return;
   }
   var last_tick = ticks_data[symbol][ticks_len-1];
-  // --------------------------
-  // Если мы касаемся верхней
-  // линии боллинджера или выше
-  // --------------------------
+
   var bb = last_tick[2];
   if(last_tick[1] > bb[0]){
-    // ---------------------------
-    // Идем в обратном направлении
-    // Ищем пересечение центра
-    // ---------------------------
-    for(var i=(ticks_len-1); i>0; i--){
-      var tick = ticks_data[symbol][i];
-      bb = tick[2];
-      if(tick[1] <= bb[1]){
-        console.log(timestamp2date(tick[0]), "PUT middle");
-        // ---------------------------
-        // Делаем ставку,
-        // мы нашли пересечение центра
-        // ---------------------------
-        var deal_params = {
-          "contract_type": "PUT",
+    // ---------------------------------------------------
+    // Если после предыдущей сделки не был касание центра,
+    // то защищаемся от тренда и не делаем ставку
+    // ---------------------------------------------------
+    if(last_deal !== null){
+      // ---------------------------
+      // Идем в обратном направлении
+      // Ищем пересечение центра
+      // ---------------------------
+      for(var i=(ticks_len-1); i>=0; i--){
+        var tick = ticks_data[symbol][i];
+        bb = tick[2];
+        // -------------------
+        // Пересечения не было
+        // -------------------
+        if(epoch > tick[0]){
+          break;
         }
-        buy(symbol, deal_params);
-        break;
+        // ----------------
+        // Пересечение было
+        // ----------------
+        if(tick[1] <= bb[1]){
+          buy_from_playboy(symbol, "PUT");
+          break;
+        }
       }
-      if(tick[0] < epoch){
-        break
-      }
+    }else{
+      buy_from_playboy(symbol, "PUT");
     }
   }else if(last_tick[1] < bb[2]){
-    // ---------------------------
-    // Идем в обратном направлении
-    // Ищем пересечение центра
-    // ---------------------------
-    for(var i=(ticks_len-1); i>0; i--){
-      var tick = ticks_data[symbol][i];
-      bb = tick[2];
-      if(tick[1] > bb[1]){
-        console.log(timestamp2date(tick[0]), "CALL middle");
-        // ---------------------------
-        // Делаем ставку,
-        // мы нашли пересечение центра
-        // ---------------------------
-        var deal_params = {
-          "contract_type": "CALL",
+    // ----------------------------------------------------
+    // Если после предыдущей сделки не было касание центра,
+    // то защищаемся от тренда и не делаем ставку
+    // ----------------------------------------------------
+    if(last_deal !== null){
+      // ---------------------------
+      // Идем в обратном направлении
+      // Ищем пересечение центра
+      // ---------------------------
+      for(var i=(ticks_len-1); i>=0; i--){
+        var tick = ticks_data[symbol][i];
+        bb = tick[2];
+        // -------------------
+        // Пересечения не было
+        // -------------------
+        if(epoch > tick[0]){
+          break;
         }
-        buy(symbol, deal_params);
-        break;
+        // ----------------
+        // Пересечение было
+        // ----------------
+        if(tick[1] >= bb[1]){
+          buy_from_playboy(symbol, "CALL");
+          break;
+        }
       }
-      if(tick[0] < epoch){
-        break
-      }
+    }else{
+      buy_from_playboy(symbol, "CALL");
     }
   }
+}
+// ----------------------------------------
+// Рассчитываем сколько раз мы уже серанули
+// ----------------------------------------
+function get_loose_count(symbol){
+  var loose_count = 1;
+  for(var i=(deals_data[symbol].length-1); i>=0; i--){
+    var deal = deals_data[symbol][i];
+    if(deal.status === "lost"){
+      loose_count += 1;
+    }else{
+      // -----------------------------------
+      // Тут непонятка - если мы в сделке,
+      // то будет всегда digit возвращаться,
+      // но лучше так
+      // -----------------------------------
+      break;
+    }
+  }
+  return loose_count;
+}
+// ----------------------------------
+// Высчитываем с помощью мартингейла
+// сколько мы должны сейчас поставить
+// ----------------------------------
+function calc_rates(symbol){
+  var digit = 0.35;
+  var max_loose_count = 5;
+  var multiply = 2; // Множитель
+  var loose_count = get_loose_count(symbol);
+
+  // -------------------------------------
+  // Если умудрились max раз подряд всрать
+  // пишем в статистику
+  // -------------------------------------
+  if(loose_count > stats_data[symbol].max_loose_in_sequence){
+    stats_data[symbol].max_loose_in_sequence = loose_count;
+  }
+  while(loose_count > max_loose_count){
+    loose_count = loose_count - max_loose_count;
+  }
+  return martingail(digit, loose_count, multiply);
 }
 
 // -------------------------------------
@@ -338,14 +394,25 @@ function get_ticks_history(symbol){
 }
 // ---------------------------------
 // Показываем информацию об аккаунте
+// после того как авторизовались
 // ---------------------------------
 function show_account(){
   $("#authorized").html(`
-    <p>Баланс: ${authorized.balance}</p>
+    <p class='balance' data-balance='${authorized.balance}'>Баланс: ${authorized.balance}</p>
     <p>email: ${authorized.email}</p>
     <p>is_virtual: ${authorized.is_virtual}</p>
     <p>scopes: ${authorized.scopes.join(", ")}</p>
   `);
+  $("#analytics").append($("<p>Начинаем, баланс " + authorized.email + " : " + authorized.balance + "</p>"));
+}
+// --------------------------------
+// Обновляем информацию об аккаунте
+// data = {'balance_after':1000.00}
+// --------------------------------
+function update_account(data){
+  $("#authorized .balance").html(`Баланс: ${data.balance_after}`);
+  $("#authorized .balance").attr("data-balance", data.balance_after);
+  $("#analytics").append($("<p>Баланс: " + data.balance_after + "</p>"));
 }
 // ---------------------------------
 // Сгруппировать возможные контракты
@@ -422,7 +489,7 @@ function ping(){
 // -----------
 function authorize(){
   send({
-    "authorize": ws_token,
+    "authorize": ws_tokens[0],
   });
 }
 
@@ -528,8 +595,10 @@ function create_chart(symbol){
         text: 'Shape: "squarepin"'
       }*/],
       onSeries: "series_" + symbol,
-      shape: 'squarepin',
-      width: 16,
+      //shape: 'squarepin',
+      //shape: 'circlepin',
+      //width: 16,
+      width: 32,
     }];
 
   var tick = null;
@@ -584,6 +653,22 @@ function create_chart(symbol){
     },
   });
 
+  // --------------------------
+  // Записываем график в массив
+  // --------------------------
+  if(charts_data[symbol] === undefined){
+    charts_data[symbol] = myChart;
+  }
+  // ------------------------------
+  // Записываем статистику в массив
+  // ------------------------------
+  if(stats_data[symbol] === undefined){
+    stats_data[symbol] = {
+      "started": Date.now(),
+      "max_loose_in_sequence": 0,
+    };
+  }
+
   var interval = setInterval(function() {
     var cur_tick = null;
 
@@ -620,30 +705,121 @@ function create_chart(symbol){
     // ----------------
     // Флаги для сделок
     // ----------------
-    for(var i=0; i<deals_data[symbol].length; i++){
+    var deals_data_len = deals_data[symbol].length;
+    for(var i=0; i<deals_data_len; i++){
       var deal = deals_data[symbol][i];
-      for(var j=0; j<deal.tick_stream.length; j++){
+      // ------------------------
+      // Если сделка завершена
+      // и обработана, пропускаем
+      // ------------------------
+      if(deal.processed === 1){
+        continue;
+      }
+      // ---------------------------
+      // Название флага (вверх/вниз)
+      // ---------------------------
+      var title = "↓";
+      if(deal.contract_type == "CALL"){
+        title = "↑";
+      }
+      // ---------------------
+      // Выбираем цвет флага
+      // Выбираем исход сделки
+      // ---------------------
+      var color = "#000000";
+      var status = ""
+      switch(deal.status){
+        case "won":
+          color = "#00FF00";
+          status = "+"
+          break;
+        case "lost":
+          color = "#FF0000";
+          status = "-"
+          break;
+        default:
+          break;
+      }
 
+      title += " " + status;
+
+
+      if(deal.tick_stream.length > 0){
+        var dd = deal.tick_stream[0];
+        // ----------------------------------------
+        // Проверка на то, что точка уже на графике
+        // ----------------------------------------
+        var index = myChart.series[3].xData.indexOf(dd[0]);
+        if(index === -1){
+          myChart.series[3].addPoint({
+            x: dd[0],
+            title: title,
+            color: color,
+            text: 'Цена: ' + deal.buy_price + '<br />Статус: Сделка открыта' + '<br />Значение:' + dd[1],
+          }, redraw, shift);
+        }
+      }
+
+/*
+      for(var j=0; j<deal.tick_stream.length; j++){
         var dd = deal.tick_stream[j];
         // ----------------------------------------
         // Проверка на то, что точка уже на графике
         // ----------------------------------------
         var index = myChart.series[3].xData.indexOf(dd[0]);
         if(index > -1){
+          // ----------------------
+          // Если сделка закончена,
+          // то надо обновить точки
+          // ----------------------
+          if(deal.status !== "open"){
+            myChart.series[3].points[index].update({
+                title: title,
+                text: 'Цена: ' + deal.buy_price + '<br />Статус: ' + deal.status,
+                color: color,
+            });
+          }
           continue;
+        }else{
+          myChart.series[3].addPoint({
+            x: dd[0],
+            title: title,
+            color: color,
+            text: 'Цена: ' + deal.buy_price + '<br />Статус: ' + deal.status,
+          }, redraw, shift);
         }
+      }
+*/
+      // ----------------------------------
+      // Если сделка закрыта,
+      // тогда отмечаем ее как обработанную
+      // ----------------------------------
+      if(deal.status !== "open"){
+        deal.processed = 1;
         // ---------------------------
-        // Название флага (вверх/вниз)
+        // Показываем результат сделки
         // ---------------------------
-        var title = "↓";
-        if(deal.contract_type == "CALL"){
-          title = "↑";
+        var tick_stream_len = deal.tick_stream.length;
+        if(tick_stream_len > 0){
+          var dd = deal.tick_stream[tick_stream_len-1];
+          myChart.series[3].addPoint({
+            x: dd[0],
+            title: title,
+            color: color,
+            text: 'Цена: ' + deal.buy_price + '<br />Статус: ' + status + '<br />Значение:' + dd[1],
+          }, redraw, shift);
         }
-        myChart.series[3].addPoint({
-          x: dd[0],
-          title: title,
-          text: 'Цена: ' + deal.buy_price + '<br />Статус: ' + deal.status,
-        }, redraw, shift);
+        // -----------------------------------
+        // Обновить баланс при успешной сделке
+        // -----------------------------------
+        if(deal.status === "won"){
+          var balance = $("#authorized .balance").attr("data-balance");
+          var balance_after = parseFloat(balance) + deal.payout;
+          update_account({'balance_after':balance_after.toFixed(2)});
+          $("#analytics").append($("<p>Выигрыш</p><p>---</p>"));
+        }else{
+          $("#analytics").append($("<p>Проигрыш</p><p>---</p>"));
+        }
       }
     };
     // -------------------------
@@ -670,7 +846,6 @@ function buy(contract, params){
       return;
     }
   }
-
   console.log(params);
   var deal_params = {
     "symbol": contract,
@@ -682,9 +857,15 @@ function buy(contract, params){
     "amount": "0.35",
     // "date_start":date_start, # Отложенные контракты должны начинаться позднее, чем через 5 минут от настоящего момента.
   }
+  // -------------------------------------
+  // Переопределение параметров для сделки
+  // -------------------------------------
   if(params !== undefined){
     if(params['contract_type']){
       deal_params['contract_type'] = params['contract_type'];
+    }
+    if(params['amount']){
+      deal_params['amount'] = params['amount'];
     }
   }
 
@@ -692,6 +873,59 @@ function buy(contract, params){
   deal['price'] = deal_params['amount'];
   deal['buy'] = 1;
   deal['subscribe'] = 1;
+
+  console.log("[DEAL]:", deal);
+
+  delay_before_deal[contract] = Date.now() + 5000; // 5 сек задержка
+  send(deal);
+}
+
+// --------------------------------
+// Покупка для нескольких аккаунтов
+// params - параметры для сделки
+// Нам не приходит история, мы не
+// можем нормально подписаться
+// --------------------------------
+function buy_for_multiple_accounts(contract, params){
+  // ---------------------------------
+  // Задержка перед следующей покупкой
+  // ---------------------------------
+  if(delay_before_deal[contract] === undefined){
+    delay_before_deal[contract] = 0;
+  }else{
+    var now = Date.now();
+    if(now <= delay_before_deal[contract]){
+      console.log("[WARN]: delay before deal");
+      return;
+    }
+  }
+  console.log(params);
+  var deal_params = {
+    "symbol": contract,
+    "duration_unit": "t", // m
+    "duration": 5, // 1
+    "contract_type": "CALL", // PUT
+    "basis": "stake", // payout
+    "currency": "USD",
+    "amount": "0.35",
+    // "date_start":date_start, # Отложенные контракты должны начинаться позднее, чем через 5 минут от настоящего момента.
+  }
+  // -------------------------------------
+  // Переопределение параметров для сделки
+  // -------------------------------------
+  if(params !== undefined){
+    if(params['contract_type']){
+      deal_params['contract_type'] = params['contract_type'];
+    }
+    if(params['amount']){
+      deal_params['amount'] = params['amount'];
+    }
+  }
+
+  var deal = {"parameters": deal_params};
+  deal['buy_contract_for_multiple_accounts'] = 1
+  deal['tokens'] = ws_tokens
+  deal['price'] = deal_params['amount'];
 
   console.log("[DEAL]:", deal);
 
@@ -709,8 +943,30 @@ window.onload = function(){
   }, 1000);
 }
 $(document).ready(function(){
+
+  var test_symbol = "R_50";
+  var test_deal_params = {
+    "contract_type": "CALL",
+    "amount": 0.35,
+  }
+
   $("#buy_contract").click(function(){
-    buy("R_50");
+    buy(test_symbol, test_deal_params);
+  });
+  $("#buy_contract_multiple").click(function(){
+    buy_for_multiple_accounts(test_symbol, test_deal_params);
+  });
+
+
+  $(".toggle_active_symbols_panel").click(function(){
+    var container = $(".active_symbols_panel");
+    if(container.hasClass("active")){
+      container.removeClass("active");
+      $(this).html("Показать контракты");
+    }else{
+      container.addClass("active");
+      $(this).html("Скрыть контракты");
+    }
   });
 });
 </script>
@@ -719,24 +975,63 @@ $(document).ready(function(){
     clear:both;
     width:100%;
   }
+  .active_symbols_panel{
+    display:none;
+  }
+  .active_symbols_panel.active{
+    display:block;
+  }
 </style>
 
 </head>
 <body class="custom_bootstrap">
+
+<!-- Добавить регистрацию по токену токен + пароль -->
+<div id="login_panel">
+  Ваш токен: <input type="text" />
+  Ваш пароль: <input type="text" />
+</div>
+
 <div id="authorized"></div>
-<div id="active_symbols"></div>
+
+<div class="active_symbols_panel">
+  <div id="active_symbols"></div>
+</div>
+<a class="toggle_active_symbols_panel btn btn-info">Показать контракты</a><br /><br />
+
 <div id="buttons">
   <a id="buy_contract" href="javascript:void(0);" class="btn btn-primary">Купить</a>
+  <a id="buy_contract_multiple" href="javascript:void(0);" class="btn btn-primary">Купить на несколько аккаунтов</a>
+</div>
+<div id="deal_conditions">
+  <h2>Условия покупки вверх</h2>
+  <ul>
+    <li>Касание нижней границы Боллинджера</li>
+    <li>Предыдущей сделки не было или после нее мы были выше средней линии Боллинджера</li>
+  </ul>
+
+  <h2>Условия покупки вниз</h2>
+  <ul>
+    <li>Касание верхней границы Боллинджера</li>
+    <li>Предыдущей сделки не было или после нее мы были ниже средней линии Боллинджера</li>
+  </ul>
 </div>
 
 <div id="charts"></div>
 
 <div id="container"></div>
+
+<div id="analytics" style="height:500px;">
+  <h2>События:</h2>
+</div>
+
+
 <!--
 
 TODO:
-1) обновлять флаги (на победа/проигрыш)
-2) самостоятельно делать ставки по болленджеру
+1) логирование (вывод) покупок
+2) регистрация по токену
+3) сделать так, чтобы 1 ключ не мог играть параллельно (не давать залогиниться двум пользователям)
 
 https://www.highcharts.com/stock/demo/compare
 -->
